@@ -1,0 +1,197 @@
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#include <stdio.h>
+#include<iostream>
+#include <string>
+#include<deque>
+#include <memory.h>
+
+using namespace std;
+
+#define CMD_INIT       100
+#define CMD_INSERT     200
+#define CMD_MOVECURSOR 300
+#define CMD_COUNT      400
+
+extern void init(int H, int W, char mStr[]);
+extern void insert(char mChar);
+extern char moveCursor(int mRow, int mCol);
+extern int countCharacter(char mChar);
+
+
+deque <char> d[310];
+int h, w;
+int cnt[310][26];
+int curx, cury;
+int lastx, lasty;
+void init(int H, int W, char mStr[])
+{
+	h = H;
+	w = w;
+	curx = cury = 0;
+	for (int i = 0; i < h; i++) {
+		d[i].clear();
+	}
+	memset(cnt, 0, sizeof(cnt));
+	
+	int tmp = 0;
+	for (int i = 0; i < strlen(mStr); i++) {
+		d[i / w].push_back(mStr[i]);
+		cnt[i / w][mStr[i] - 'a']++;
+	}
+	lastx = strlen(mStr) / w;
+	lasty = strlen(mStr) % w;
+}
+
+void insert(char mChar)
+{
+	d[curx].insert(d[curx].begin() + cury, mChar);
+	cnt[curx][mChar - 'a']++;
+
+	if (d[curx].size() > w) {
+		int tmp = curx;
+		while (d[tmp].size()>w) {
+			char last = d[tmp].back();
+			d[tmp].pop_back();
+			cnt[tmp][last - 'a']--;
+			
+			tmp++;
+			d[tmp].push_front(last);
+			cnt[tmp][last - 'a']++;
+		}
+	}
+	cury++;
+	lasty++;
+	if (cury == w) {
+		curx++;
+		cury = 0;
+	}
+	if (lasty == w) {
+		lastx++;
+		lasty = 0;
+	}
+}
+
+
+
+char moveCursor(int mRow, int mCol)
+{
+	if ((mRow - 1 == lastx && mCol - 1 > lasty) || mRow - 1 > lastx) {
+		curx = lastx;
+		cury = lasty+1;
+
+		if (cury == w) {
+			curx = lastx++;
+			cury = 0;
+		}
+		return '$';
+	}
+	else {
+		curx = mRow - 1;
+		cury = mCol - 1;
+		return d[curx][cury];
+	}
+}
+
+int countCharacter(char mChar)
+{
+	int tmp = 0;
+	for (int i = cury; i < d[curx].size(); i++) {
+		if (d[curx][i] == mChar)
+			tmp++;
+	}
+	for (int i = curx+1; i <= lastx; i++) {
+		tmp += cnt[i][mChar - 'a'];
+	}
+	return tmp;
+}
+
+
+
+static bool run()
+{
+	bool correct = false;
+	int queryCnt;
+	scanf("%d", &queryCnt);
+	int H, W;
+	char mChar;
+	static char mStr[90001];
+
+	while (queryCnt--)
+	{
+		int cmd;
+		scanf("%d", &cmd);
+
+		if (cmd == CMD_INIT)
+		{
+			scanf("%d %d %s", &H, &W, mStr);
+			init(H, W, mStr);
+			correct = true;
+		}
+		else if (cmd == CMD_INSERT)
+		{
+			scanf(" %c", &mChar);
+			insert(mChar);
+		}
+		else if (cmd == CMD_MOVECURSOR)
+		{
+			int mRow, mCol;
+			scanf("%d %d", &mRow, &mCol);
+
+			char ret = moveCursor(mRow, mCol);
+
+			char ans;
+			scanf(" %c", &ans);
+			if (ret != ans)
+			{
+				correct = false;
+			}
+		}
+		else if (cmd == CMD_COUNT)
+		{
+			scanf(" %c", &mChar);
+
+			int ret = countCharacter(mChar);
+
+			int ans;
+			scanf("%d", &ans);
+			if (ret != ans)
+			{
+				correct = false;
+			}
+		}
+
+
+
+
+		/*
+
+		cout<<"\n";
+		printarr();
+		cout << "cor" << correct << "\n";
+		cout << "cur: " << cur.x << " , " << cur.y << "\n";
+		cout << "ind: " << ind.x << " , " << ind.y << "\n\n\n";
+		*/
+
+	}
+	return correct;
+}
+
+int main()
+{
+
+	setbuf(stdout, NULL);
+	freopen("sample_input.txt", "r", stdin);
+	int T, MARK;
+	scanf("%d %d", &T, &MARK);
+
+	for (int tc = 1; tc <= T; tc++)
+	{
+		int score = run() ? MARK : 0;
+		printf("#%d %d\n", tc, score);
+
+	}
+	return 0;
+}
