@@ -1,0 +1,281 @@
+#ifndef _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#include <stdio.h>
+#include<iostream>
+#include <string>
+#include<deque>
+#include <memory.h>
+#include<vector>
+#include<set>
+#include<queue>
+using namespace std;
+
+#define NAME_MAXLEN 6
+#define PATH_MAXLEN 1999
+
+int par[50005];
+int cnt[50005];
+vector <string> dir_name;
+vector <set<int>> child;
+queue <int> q;
+
+void init(int n) {
+    memset(par, -1, sizeof(par));
+    memset(cnt, 0, sizeof(par));
+    dir_name.clear();
+    child.clear();
+    dir_name.resize(n + 1);
+    child.resize(n + 1);
+    while (!q.empty())
+        q.pop();
+    for (int i = 1; i <=n; i++)
+        q.push(i);
+    cnt[0] = 1;
+}
+
+int find_idx(char p[PATH_MAXLEN + 1]) {
+    int res = 0;
+    
+    string tmp;
+    int pre = 1;
+
+    while (1) {
+        if (child[res].size() == 0)
+            break;
+        for (auto k : child[res]) {
+            for (int i = 1; i < strlen(p); i++) {
+                if (p[i] == '/') {
+                    tmp = "";
+                    for (int j = pre; j < i; j++) {
+                        tmp += p[j];
+                    }
+                    pre = i + 1;
+
+
+                }
+            }
+            if (dir_name[k] == tmp) {
+                res = k;
+            }
+        }
+    }
+    return res;
+}
+void update(int x, int c) {
+    cnt[x] += c;
+    if(par[x] >=0) {
+        update(par[x], c);
+    }
+}
+void unlink(int idx) {
+    if (par[idx] >= 0) {
+        update(par[idx], -cnt[idx]);
+        child[par[idx]].erase(idx);
+    }
+    par[idx] = -1;
+}
+void del_node(int idx) {
+    for (auto i : child[idx]) {
+        del_node(i);
+    }
+    child[idx].clear();
+    par[idx] = -1;
+    cnt[idx] = 0;
+    q.push(idx);
+}
+void cmd_mkdir(char path[PATH_MAXLEN + 1], char name[NAME_MAXLEN + 1]) {
+    int t = q.front();
+    q.pop();
+
+    int idx = find_idx(path);
+
+    cnt[t] = 1;
+    par[t] = idx;
+    dir_name[t] = name;
+    child[idx].insert(t);
+    update(t, 1);
+}
+
+void cmd_rm(char path[PATH_MAXLEN + 1]) {
+    int idx = find_idx(path);
+    unlink(idx);
+    del_node(idx);
+}
+int copy_node(int x, int y) {
+    int t = q.front();
+    q.pop();
+
+    cnt[t] = cnt[x];
+    dir_name[t] = dir_name[x];
+    for (int i : child[x]) {
+        int tmp = copy_node(i, t);
+        child[t].insert(tmp);
+    }
+    par[t] = y;
+    return t;
+}
+void cmd_cp(char srcPath[PATH_MAXLEN + 1], char dstPath[PATH_MAXLEN + 1]) {
+    int sidx = find_idx(srcPath);
+    int didx = find_idx(dstPath);
+
+
+
+    int t=copy_node(sidx, didx);
+    update(didx, cnt[t]);
+    child[didx].insert(t);
+
+   
+}
+
+void cmd_mv(char srcPath[PATH_MAXLEN + 1], char dstPath[PATH_MAXLEN + 1]) {
+    int sidx = find_idx(srcPath);
+    int didx = find_idx(dstPath);
+    unlink(sidx);
+    par[sidx] = didx;
+    child[didx].insert(sidx);
+    update(didx, cnt[sidx]);
+}
+
+int cmd_find(char path[PATH_MAXLEN + 1]) { 
+    int idx = find_idx(path);
+    return cnt[idx] - 1;
+}
+/*
+#include < bits/stdc++.h >
+using namespace std;
+
+#define NAME_MAXLEN 6
+#define PATH_MAXLEN 1999
+
+// 각 노드는 0 ~ N-1번으로 표현
+// 루트 노드가 0번
+
+// 각 노드의 부모 노드, 각 노드의 자식 개수 + 1
+int parent[50010], cnt[50010];
+
+// 각 노드의 자식 노드 번호
+vector< set< int >> child;
+
+// 각 노드의 이름
+vector< string > dir_name;
+
+// 사용할 수 있는 인덱스 저장
+queue< int > que;
+int get_idx() {
+  // 사용할 수 있는 인덱스 하나씩 반환
+  int t = que.front();
+  que.pop();
+  return t;
+}
+
+// idx 노드와 그 부모 노드들의 cnt를 +C만큼 업데이트
+void updcnt(int idx, int C) {
+  cnt[idx] += C;
+  if (parent[idx] >= 0)
+    updcnt(parent[idx], C);
+}
+
+// parent_node 아래에 child_node 삽입
+void node_insert(int parent_node, int child_node) {
+  child[parent_node].insert(child_node);
+  parent[child_node] = parent_node;
+  updcnt(parent_node, cnt[child_node]);
+}
+
+// idx 노드와 그 부모 노드 사이에 연결을 끊음
+void unlink(int idx) {
+  if (parent[idx] >= 0) {
+    updcnt(parent[idx], -cnt[idx]);
+    child[parent[idx]].erase(idx);
+  }
+  parent[idx] = -1;
+}
+
+// dst 노드 아래에 src 노드와 같은 노드 복사
+int copy_node(int src, int dst) {
+  int new_idx = get_idx();
+  cnt[new_idx] = cnt[src];
+  dir_name[new_idx] = dir_name[src];
+  for (int i : child[src]) {
+    int tmp = copy_node(i, new_idx);
+    child[new_idx].insert(tmp);
+  }
+  parent[new_idx] = dst;
+  return new_idx;
+}
+
+// idx 노드와 그 자식 노드들 모두 삭제
+void del_node(int idx) {
+  for (auto i : child[idx]) {
+    del_node(i);
+  }
+  child[idx].clear();
+  que.push(idx);
+  parent[idx] = -1;
+  cnt[idx] = 0;
+}
+
+// path가 가리키는 노드 번호 반환
+int get_path_idx(char path[PATH_MAXLEN + 1]) {
+  int ret = 0;
+  char *ptr = strtok(path, "/");
+  while (ptr != NULL) {
+    for (auto i : child[ret]) {
+      if (dir_name[i] == ptr) {
+        ret = i;
+        break;
+      }
+    }
+    ptr = strtok(NULL, "/");
+  }
+  return ret;
+}
+
+void init(int n) {
+  while (!que.empty())
+    que.pop();
+  memset(cnt, 0, sizeof cnt);
+  memset(parent, -1, sizeof parent);
+  child.clear();
+  dir_name.clear();
+  child.resize(n + 1);
+  dir_name.resize(n + 1);
+  for (int i = 1; i <= n; i++) {
+    que.push(i);
+  }
+  cnt[0] = 1;
+}
+
+void cmd_mkdir(char path[PATH_MAXLEN + 1], char name[NAME_MAXLEN + 1]) {
+  int t = get_path_idx(path);
+  int new_idx = get_idx();
+  cnt[new_idx] = 1;
+  dir_name[new_idx] = name;
+  node_insert(t, new_idx);
+}
+
+void cmd_rm(char path[PATH_MAXLEN + 1]) {
+  int tidx = get_path_idx(path);
+  unlink(tidx);
+  del_node(tidx);
+}
+
+void cmd_cp(char srcPath[PATH_MAXLEN + 1], char dstPath[PATH_MAXLEN + 1]) {
+  int srcidx = get_path_idx(srcPath);
+  int dstidx = get_path_idx(dstPath);
+  int get_i = copy_node(srcidx, dstidx);
+  updcnt(dstidx, cnt[get_i]);
+  child[dstidx].insert(get_i);
+}
+
+void cmd_mv(char srcPath[PATH_MAXLEN + 1], char dstPath[PATH_MAXLEN + 1]) {
+  int srcidx = get_path_idx(srcPath);
+  unlink(srcidx);
+  node_insert(get_path_idx(dstPath), srcidx);
+}
+
+int cmd_find(char path[PATH_MAXLEN + 1]) { return cnt[get_path_idx(path)] - 1; }
+
+*/
