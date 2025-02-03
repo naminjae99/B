@@ -1,7 +1,6 @@
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
-
 #include <stdio.h>
 #include<iostream>
 #include <string>
@@ -26,37 +25,41 @@ int h, w;
 int cnt[310][26];
 int curx, cury;
 int lastx, lasty;
+int i, j;
+int tmp;
+
 void init(int H, int W, char mStr[])
 {
 	h = H;
-	w = w;
+	w = W;
 	curx = cury = 0;
-	for (int i = 0; i < h; i++) {
+	for (i = 0; i < h; i++)
 		d[i].clear();
-	}
 	memset(cnt, 0, sizeof(cnt));
-	
-	int tmp = 0;
-	for (int i = 0; i < strlen(mStr); i++) {
+
+	tmp = 0;
+	for (i = 0; i < strlen(mStr); i++) {
 		d[i / w].push_back(mStr[i]);
 		cnt[i / w][mStr[i] - 'a']++;
 	}
 	lastx = strlen(mStr) / w;
 	lasty = strlen(mStr) % w;
+
 }
 
+char last;
 void insert(char mChar)
 {
-	d[curx].insert(d[curx].begin() + cury, mChar);
+	d[curx].insert(d[curx].begin()+cury,mChar);
 	cnt[curx][mChar - 'a']++;
 
 	if (d[curx].size() > w) {
-		int tmp = curx;
-		while (d[tmp].size()>w) {
-			char last = d[tmp].back();
+		tmp = curx;
+		while (d[tmp].size() > w) {
+			last = d[tmp].back();
 			d[tmp].pop_back();
 			cnt[tmp][last - 'a']--;
-			
+
 			tmp++;
 			d[tmp].push_front(last);
 			cnt[tmp][last - 'a']++;
@@ -64,50 +67,55 @@ void insert(char mChar)
 	}
 	cury++;
 	lasty++;
-	if (cury == w) {
+
+	if (cury >= w) {
 		curx++;
 		cury = 0;
 	}
-	if (lasty == w) {
+	if (lasty >= w) {
 		lastx++;
 		lasty = 0;
 	}
+
 }
 
 
 
 char moveCursor(int mRow, int mCol)
 {
-	if ((mRow - 1 == lastx && mCol - 1 > lasty) || mRow - 1 > lastx) {
+	if ((mRow - 1 == lastx && mCol - 1 >= lasty) || mRow - 1 > lastx) {
 		curx = lastx;
-		cury = lasty+1;
+		cury = lasty;
 
-		if (cury == w) {
+		if (cury >= w) {
 			curx = lastx++;
 			cury = 0;
 		}
+
 		return '$';
 	}
 	else {
 		curx = mRow - 1;
 		cury = mCol - 1;
+
 		return d[curx][cury];
 	}
+	
 }
 
 int countCharacter(char mChar)
 {
-	int tmp = 0;
-	for (int i = cury; i < d[curx].size(); i++) {
+	tmp = 0;
+	for (i = cury; i < d[curx].size(); i++) {
 		if (d[curx][i] == mChar)
 			tmp++;
 	}
-	for (int i = curx+1; i <= lastx; i++) {
+	for (i = curx + 1; i <= lastx; i++) {
 		tmp += cnt[i][mChar - 'a'];
 	}
+
 	return tmp;
 }
-
 
 
 static bool run()
